@@ -24,7 +24,7 @@ The software is for programming a line follower that can recognize colors. When 
 
 ### Description of files and production workflow
 
-1.  Print the shield and lid
+1.  Print the protective screen and the lid
 
 ## Hardware
 

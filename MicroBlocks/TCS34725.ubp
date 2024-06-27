@@ -1,0 +1,194 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables r b g w 
+
+script 176 50 {
+whenStarted
+digitalWriteOp 5 false
+digitalWriteOp 23 true
+if ((v '_TCS34725 initalized') == 0) {
+  i2cSet (hexToInt '29') (hexToInt '81') (hexToInt 'EB')
+  i2cSet (hexToInt '29') (hexToInt '8F') 1
+  i2cSet (hexToInt '29') (hexToInt '80') 1
+  waitMillis 3
+  i2cSet (hexToInt '29') (hexToInt '80') 3
+  '_TCS34725 initalized' = 1
+}
+local 'crgb' (newList 8)
+local 'id' (i2cGet (hexToInt '29') (hexToInt '92'))
+comment '0x4D for TCS34727 (untested)'
+id = (hexToInt '44')
+if (id == (hexToInt '44')) {
+  '[sensors:i2cWrite]' (hexToInt '29') (hexToInt '94')
+  '[sensors:i2cRead]' (hexToInt '29') crgb
+  sayIt ('[data:joinStrings]' crgb ',')
+}
+digitalWriteOp 23 false
+r = (at 1 crgb)
+g = (at 3 crgb)
+b = (at 5 crgb)
+w = (at 7 crgb)
+sendBroadcast 'go!'
+}
+
+script 738 61 {
+whenBroadcastReceived 'go!'
+local 'min' (minimum r g b)
+local 'max' (maximum r g b)
+if (max < 50) {
+  sayIt 'Black'
+}
+if (min > 185) {
+  sayIt 'White'
+}
+if (max == r) {
+  local 'l' ((r * 2) / 3)
+  if (and (g < l) (b < l)) {
+    sayIt 'Red'
+  }
+  if (g < l) {
+    sayIt 'Magenta'
+  }
+  if (b < l) {
+    sayIt 'Yellow'
+  }
+}
+if (max == g) {
+  local 'l' ((g * 2) / 3)
+  if (and (r < l) (b < l)) {
+    sayIt 'Green'
+  }
+  if (r < l) {
+    sayIt 'Cyan'
+  }
+  if (b < l) {
+    sayIt 'Yellow'
+  }
+}
+if (max == b) {
+  local 'l' ((b * 2) / 3)
+  if (and (r < l) (g < l)) {
+    sayIt 'Blue'
+  }
+  if (r < l) {
+    sayIt 'Cyan'
+  }
+  if (g < l) {
+    sayIt 'Magenta'
+  }
+}
+}
+
+
+module 'Color (TCS34725)' Input
+author 'José García Yeste'
+version 1 4 
+tags sensor color 
+description 'Support for the TCS34725 RGB color sensor.
+
+Tested with:
+https://www.dfrobot.com/product-1546.html
+https://www.ebay.es/itm/323902408493 
+'
+variables '_TCS34725 initalized' 
+
+  spec 'r' 'TCS34725 connected' 'TCS34725 connected'
+  spec 'r' 'TCS34725 rgb' 'TCS34725 rgb'
+  spec 'r' 'TCS34725 luminance' 'TCS34725 luminance'
+  spec 'r' 'color' 'color _ name' 'color'
+  spec ' ' '_TCS34725 setup' '_TCS34725 setup'
+  spec 'r' '_TCS34725 raw' '_TCS34725 raw'
+
+to 'TCS34725 connected' {
+}
+
+to 'TCS34725 luminance' {
+  local 'crgb' ('_TCS34725 raw')
+  local 'r' (at 2 crgb)
+  local 'g' (at 3 crgb)
+  local 'b' (at 4 crgb)
+  comment '(-0.32466 * r) + (1.57837 * g) + (-0.73191 * b);'
+  return (maximum 0 ((((r * -3246) + (g * 15784)) + (b * -7319)) / 10000))
+}
+
+to 'TCS34725 rgb' {
+  local 'raw' ('_TCS34725 raw')
+  local 'rgb' (newList 3)
+  for i 3 {
+    atPut i rgb (minimum ((at (i + 1) raw) / 14) 255)
+  }
+}
+
+to '_TCS34725 raw' {
+  waitMillis 1
+  atPut 1 crgb (((at 2 crgb) << 8) | (at 1 crgb))
+  atPut 2 crgb (((at 4 crgb) << 8) | (at 3 crgb))
+  atPut 3 crgb (((at 6 crgb) << 8) | (at 5 crgb))
+  atPut 4 crgb (((at 8 crgb) << 8) | (at 7 crgb))
+}
+
+to '_TCS34725 setup' {
+  comment 'https://github.com/DFRobot/DFRobot_TCS34725'
+  if ((v '_TCS34725 initalized') == 0) {
+    i2cSet (hexToInt '29') (hexToInt '81') (hexToInt 'EB')
+    i2cSet (hexToInt '29') (hexToInt '8F') 1
+    i2cSet (hexToInt '29') (hexToInt '80') 1
+    waitMillis 3
+    i2cSet (hexToInt '29') (hexToInt '80') 3
+    '_TCS34725 initalized' = 1
+  }
+}
+
+to color color {
+  local 'r' ((color >> 16) & 255)
+  local 'g' ((color >> 8) & 255)
+  local 'b' (color & 255)
+  local 'min' (minimum r g b)
+  local 'max' (maximum r g b)
+  if (max < 50) {
+    return 'Black'
+  }
+  if (min > 185) {
+    return 'White'
+  }
+  if (max == r) {
+    local 'l' ((r * 2) / 3)
+    if (and (g < l) (b < l)) {
+      return 'Red'
+    }
+    if (g < l) {
+      return 'Magenta'
+    }
+    if (b < l) {
+      return 'Yellow'
+    }
+  }
+  if (max == g) {
+    local 'l' ((g * 2) / 3)
+    if (and (r < l) (b < l)) {
+      return 'Green'
+    }
+    if (r < l) {
+      return 'Cyan'
+    }
+    if (b < l) {
+      return 'Yellow'
+    }
+  }
+  if (max == b) {
+    local 'l' ((b * 2) / 3)
+    if (and (r < l) (g < l)) {
+      return 'Blue'
+    }
+    if (r < l) {
+      return 'Cyan'
+    }
+    if (g < l) {
+      return 'Magenta'
+    }
+  }
+  return ''
+}
+

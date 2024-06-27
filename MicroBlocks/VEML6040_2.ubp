@@ -1,0 +1,443 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables '_VEML6040 initalized' 'Rot gesamt' 'grün' Green_list Blue_list White_list 'Grün gesamt' 'Blau gesamt' 'Weiß gesamt' Red_list2 rot2 blau2 'grün2' 'weiß2' 
+
+script 1095 50 {
+whenBroadcastReceived 'Farberkennung'
+comment 'Farbe erkennen und ausgeben'
+if (and (and (and (0 <= (v 'Rot gesamt')) ((v 'Rot gesamt') <= 16)) (and (and (0 <= (v 'Grün gesamt')) ((v 'Grün gesamt') <= 16)) (and (120 <= (v 'Blau gesamt')) ((v 'Blau gesamt') <= 136)))) (and (192 <= (v 'Weiß gesamt')) ((v 'Weiß gesamt') <= 195))) {
+  sayIt 'Rot'
+}
+if (and (and (and (180 <= (v 'Rot gesamt')) ((v 'Rot gesamt') <= 210)) (and (and (90 <= (v 'Grün gesamt')) ((v 'Grün gesamt') <= 110)) (and (170 <= (v 'Blau gesamt')) ((v 'Blau gesamt') <= 180)))) (and (215 <= (v 'Weiß gesamt')) ((v 'Weiß gesamt') <= 220))) {
+  sayIt 'Grün'
+}
+if (and (and (and (220 <= (v 'Rot gesamt')) ((v 'Rot gesamt') <= 255)) (and (and (111 <= (v 'Grün gesamt')) ((v 'Grün gesamt') <= 130)) (and (181 <= (v 'Blau gesamt')) ((v 'Blau gesamt') <= 200)))) (and (220 <= (v 'Weiß gesamt')) ((v 'Weiß gesamt') <= 225))) {
+  sayIt 'Blau'
+}
+if (and (and (and (25 <= (v 'Rot gesamt')) ((v 'Rot gesamt') <= 50)) (and (and (17 <= (v 'Grün gesamt')) ((v 'Grün gesamt') <= 25)) (and (136 <= (v 'Blau gesamt')) ((v 'Blau gesamt') <= 140)))) (and (192 <= (v 'Weiß gesamt')) ((v 'Weiß gesamt') <= 198))) {
+  sayIt 'Gelb'
+}
+}
+
+script 50 54 {
+whenStarted
+comment 'SK6812 leuchtet gelb'
+neoPixelAttach 1 23 true
+neoPixelSetAllToColor (colorFromRGB 255 255 0)
+digitalWriteOp 0 false
+i2cSet (hexToInt '10') (hexToInt '00') 0
+i2cSet (hexToInt '10') (hexToInt '08') 0
+i2cSet (hexToInt '10') (hexToInt '09') 0
+i2cSet (hexToInt '10') (hexToInt '0A') 0
+i2cSet (hexToInt '10') (hexToInt '0B') 0
+local 'crgb' (newList 28)
+Red_list2 = (newList 50)
+Green_list = (newList 50)
+Blue_list = (newList 50)
+White_list = (newList 50)
+comment '50 Werte aus den Registern vom VEML auslesen'
+for i 50 {
+  atPut 'all' crgb 0
+  '[sensors:i2cRead]' (hexToInt '10') crgb
+  rot2 = (at 1 crgb)
+  grün2 = (at 8 crgb)
+  blau2 = (at 15 crgb)
+  weiß2 = (at 22 crgb)
+  atPut i Red_list2 rot2
+  atPut i Green_list grün2
+  atPut i Blue_list blau2
+  atPut i White_list weiß2
+}
+sayIt ('[data:joinStrings]' Blue_list ',')
+sendBroadcast 'go!'
+}
+
+script 515 54 {
+whenBroadcastReceived 'go!'
+'Rot gesamt' = 0
+comment 'Mittelwert bilden'
+for i 50 {
+  'Rot gesamt' = ((v 'Rot gesamt') + ('[data:convertType]' (at i Red_list2) 'number'))
+}
+'Rot gesamt' = ((v 'Rot gesamt') / 50)
+'Grün gesamt' = 0
+for i 50 {
+  'Grün gesamt' = ((v 'Grün gesamt') + ('[data:convertType]' (at i Green_list) 'number'))
+}
+'Grün gesamt' = ((v 'Grün gesamt') / 50)
+'Blau gesamt' = 0
+for i 50 {
+  'Blau gesamt' = ((v 'Blau gesamt') + ('[data:convertType]' (at i Blue_list) 'number'))
+}
+'Blau gesamt' = ((v 'Blau gesamt') / 50)
+'Weiß gesamt' = 0
+for i 50 {
+  'Weiß gesamt' = ((v 'Weiß gesamt') + ('[data:convertType]' (at i White_list) 'number'))
+}
+'Weiß gesamt' = ((v 'Weiß gesamt') / 50)
+sayIt 'Rot:' (v 'Rot gesamt') 'Grün:' (v 'Grün gesamt') 'Blau:' (v 'Blau gesamt') 'Weiß:' (v 'Weiß gesamt')
+sendBroadcast 'Farberkennung'
+}
+
+script 1605 56 {
+whenBroadcastReceived 'Farberkennung'
+comment 'Linie erkennen und ausgeben'
+if (and (and (and (145 <= (v 'Rot gesamt')) ((v 'Rot gesamt') <= 158)) (and (and (70 <= (v 'Grün gesamt')) ((v 'Grün gesamt') <= 80)) (and (164 <= (v 'Blau gesamt')) ((v 'Blau gesamt') <= 168)))) (and (209 <= (v 'Weiß gesamt')) ((v 'Weiß gesamt') <= 212))) {
+  sayIt 'Weiß'
+}
+if (and (and (and (120 <= (v 'Rot gesamt')) ((v 'Rot gesamt') <= 140)) (and (and (55 <= (v 'Grün gesamt')) ((v 'Grün gesamt') <= 68)) (and (150 <= (v 'Blau gesamt')) ((v 'Blau gesamt') <= 163)))) (and (207 <= (v 'Weiß gesamt')) ((v 'Weiß gesamt') <= 209))) {
+  sayIt 'Schwarz'
+}
+}
+
+
+module 'Color (TCS34725)' Input
+author 'José García Yeste'
+version 1 4 
+tags sensor color 
+description 'Support for the TCS34725 RGB color sensor.
+
+Tested with:
+https://www.dfrobot.com/product-1546.html
+https://www.ebay.es/itm/323902408493 
+'
+variables '_TCS34725 initalized' 
+
+  spec 'r' 'TCS34725 connected' 'TCS34725 connected'
+  spec 'r' 'TCS34725 rgb' 'TCS34725 rgb'
+  spec 'r' 'TCS34725 luminance' 'TCS34725 luminance'
+  spec 'r' 'color' 'color _ name' 'color'
+  spec ' ' '_TCS34725 setup' '_TCS34725 setup'
+  spec 'r' '_TCS34725 raw' '_TCS34725 raw'
+
+to 'TCS34725 connected' {
+}
+
+to 'TCS34725 luminance' {
+  local 'crgb' ('_TCS34725 raw')
+  local 'r' (at 2 crgb)
+  local 'g' (at 3 crgb)
+  local 'b' (at 4 crgb)
+  comment '(-0.32466 * r) + (1.57837 * g) + (-0.73191 * b);'
+  return (maximum 0 ((((r * -3246) + (g * 15784)) + (b * -7319)) / 10000))
+}
+
+to 'TCS34725 rgb' {
+  local 'raw' ('_TCS34725 raw')
+  local 'rgb' (newList 3)
+  for i 3 {
+    atPut i rgb (minimum ((at (i + 1) raw) / 14) 255)
+  }
+  return ((((at 1 rgb) << 16) | ((at 2 rgb) << 8)) | (at 3 rgb))
+}
+
+to '_TCS34725 raw' {
+  '_TCS34725 setup'
+  comment 'read 8 bytes c,r,g,b'
+  local 'crgb' (newList 8)
+  id = (hexToInt '44')
+  if (id == (hexToInt '44')) {
+    '[sensors:i2cWrite]' (hexToInt '29') (hexToInt '94')
+    '[sensors:i2cRead]' (hexToInt '29') crgb
+  }
+  waitMillis 50
+  return crgb
+}
+
+to '_TCS34725 setup' {
+  comment 'https://github.com/DFRobot/DFRobot_TCS34725'
+  if ((v '_TCS34725 initialized') == 0) {
+    comment 'setIntegrationTime 50 ms (0xEB)'
+    i2cSet (hexToInt '29') (hexToInt '81') (hexToInt 'EB')
+    comment 'setGain 4X (0x01)'
+    i2cSet (hexToInt '29') (hexToInt '8F') 1
+    comment 'enable'
+    i2cSet (hexToInt '29') (hexToInt '80') 1
+    waitMillis 3
+    i2cSet (hexToInt '29') (hexToInt '80') 3
+    '_TCS34725 initialized' = 1
+  }
+}
+
+to color color {
+  local 'r' ((color >> 16) & 255)
+  local 'g' ((color >> 8) & 255)
+  local 'b' (color & 255)
+  local 'min' (minimum r g b)
+  local 'max' (maximum r g b)
+  if (max < 50) {
+    return 'Black'
+  }
+  if (min > 185) {
+    return 'White'
+  }
+  if (max == r) {
+    local 'l' ((r * 2) / 3)
+    if (and (g < l) (b < l)) {
+      return 'Red'
+    }
+    if (g < l) {
+      return 'Magenta'
+    }
+    if (b < l) {
+      return 'Yellow'
+    }
+  }
+  if (max == g) {
+    local 'l' ((g * 2) / 3)
+    if (and (r < l) (b < l)) {
+      return 'Green'
+    }
+    if (r < l) {
+      return 'Cyan'
+    }
+    if (b < l) {
+      return 'Yellow'
+    }
+  }
+  if (max == b) {
+    local 'l' ((b * 2) / 3)
+    if (and (r < l) (g < l)) {
+      return 'Blue'
+    }
+    if (r < l) {
+      return 'Cyan'
+    }
+    if (g < l) {
+      return 'Magenta'
+    }
+  }
+  return ''
+}
+
+
+module 'Distance (HC-SR04)' Input
+author 'Joan Guillén & Josep Ferràndiz'
+version 1 2 
+tags sensor 'hc-sr04' distance ultrasound 
+description 'Support for the HC-SR04 ultrasound distance sensor.'
+variables _sr04_last 
+
+  spec 'r' 'distance (cm)' 'distance (cm) trigger _ echo _' 'num num' 2 4
+  spec 'r' 'sr04_distanceOnePin' 'distance (cm) pin _' 'num' 0
+
+to 'distance (cm)' trig ech {
+  comment 'Contributed by Joan Guillén and Josep Ferràndiz'
+  digitalWriteOp trig false
+  waitMicros 2
+  digitalWriteOp trig true
+  waitMicros 50
+  digitalWriteOp trig false
+  local 'start' (microsOp)
+  waitUntil (or (not (digitalReadOp ech)) (((microsOp) - start) > 23320))
+  waitUntil (or (digitalReadOp ech) (((microsOp) - start) > 23320))
+  if (((microsOp) - start) > 23320) {
+    comment 'Distance sensor not ready; return the last distance reading'
+    return _sr04_last
+  }
+  comment 'Pulse sent. Measure time until echo is detected.'
+  start = (microsOp)
+  waitUntil (or (not (digitalReadOp ech)) (((microsOp) - start) > 23320))
+  _sr04_last = ((10 * ((microsOp) - start)) / 583)
+  comment 'Leave some time for reverberations to die away.'
+  waitMillis 10
+  if (_sr04_last == 0) {
+    zeroCount += 1
+  }
+  return _sr04_last
+}
+
+to sr04_distanceOnePin pin {
+  return ('distance (cm)' pin pin)
+}
+
+
+module NeoPixel Output
+author MicroBlocks
+version 1 6 
+description 'Control NeoPixel (WS2812) RGB LED strips and rings.
+'
+variables _np_pixels 
+
+  spec ' ' 'neoPixelAttach' 'attach _ LED NeoPixel strip to pin _ : has white _' 'num auto bool' 10 '' false
+  spec ' ' 'setNeoPixelColors10' 'set NeoPixels _ _ _ _ _ _ _ _ _ _' 'color color color color color color color color color color'
+  spec ' ' 'clearNeoPixels' 'clear NeoPixels'
+  spec ' ' 'neoPixelSetAllToColor' 'set all NeoPixels color _' 'color'
+  spec ' ' 'setNeoPixelColor' 'set NeoPixel _ color _' 'num color' 1
+  space
+  spec 'r' 'colorFromRGB' 'color r _ g _ b _ (0-255)' 'num num num' 0 100 100
+  spec 'r' 'randomColor' 'random color'
+  space
+  spec ' ' 'rotateNeoPixelsBy' 'rotate NeoPixels by _' 'auto' 1
+  spec ' ' 'NeoPixel_brighten' 'brighten NeoPixel _ by _' 'num num' 1 10
+  spec ' ' 'NeoPixel_brighten_all' 'brighten all NeoPixels by _' 'num' 10
+  space
+  spec ' ' '_NeoPixel_ensureInitialized' '_NeoPixel_ensureInitialized'
+  spec ' ' '_NeoPixel_increaseRGB' '_NeoPixel_increaseRGB of _ by _' 'num num' 1 10
+  spec ' ' '_NeoPixel_rotate' '_NeoPixel_rotate_left _' 'bool' true
+  spec ' ' '_NeoPixel_update' '_NeoPixel_update'
+
+to NeoPixel_brighten i delta {
+  '_NeoPixel_increaseRGB' i delta
+  '_NeoPixel_update'
+}
+
+to NeoPixel_brighten_all delta {
+  for i (size _np_pixels) {
+    '_NeoPixel_increaseRGB' i delta
+  }
+  '_NeoPixel_update'
+}
+
+to '_NeoPixel_ensureInitialized' {
+  if (_np_pixels == 0) {if ((boardType) == 'M5Atom-Matrix') {
+    neoPixelAttach 25 '' false
+  } ((boardType) == 'D1-Mini') {
+    comment 'D1 mini kit'
+    neoPixelAttach 7 15 false
+  } ((boardType) == 'Mbits') {
+    neoPixelAttach 25 '' false
+  } else {
+    neoPixelAttach 10 '' false
+  }}
+}
+
+to '_NeoPixel_increaseRGB' i delta {
+  if (or (i < 1) (i > (size _np_pixels))) {return}
+  local 'rgb' (at i _np_pixels)
+  if (rgb != 0) {
+    local 'r' ((rgb >> 16) & 255)
+    local 'g' ((rgb >> 8) & 255)
+    local 'b' (rgb & 255)
+    local 'brightness' (maximum r g b)
+    if (delta > 0) {
+      delta = (minimum delta (255 - brightness))
+    } else {
+      delta = (maximum delta (42 - brightness))
+    }
+    r = (maximum 0 (minimum (r + delta) 255))
+    g = (maximum 0 (minimum (g + delta) 255))
+    b = (maximum 0 (minimum (b + delta) 255))
+    atPut i _np_pixels (colorFromRGB r g b)
+  }
+}
+
+to '_NeoPixel_rotate' left {
+  '_NeoPixel_ensureInitialized'
+  local 'length' (size _np_pixels)
+  if left {
+    local 'first' (at 1 _np_pixels)
+    for i (length - 1) {
+      atPut i _np_pixels (at (i + 1) _np_pixels)
+    }
+    atPut length _np_pixels first
+  } else {
+    local 'last' (at length _np_pixels)
+    for i (length - 1) {
+      atPut ((length - i) + 1) _np_pixels (at (length - i) _np_pixels)
+    }
+    atPut 1 _np_pixels last
+  }
+}
+
+to '_NeoPixel_update' {
+  '[display:neoPixelSend]' _np_pixels
+  waitMicros 100
+}
+
+to clearNeoPixels {
+  '_NeoPixel_ensureInitialized'
+  fillList _np_pixels 0
+  '_NeoPixel_update'
+}
+
+to colorFromRGB r g b {
+  r = (maximum 0 (minimum r 255))
+  g = (maximum 0 (minimum g 255))
+  b = (maximum 0 (minimum b 255))
+  return (((r << 16) | (g << 8)) | b)
+}
+
+to neoPixelAttach number pinNumber optionalHasWhite {
+  hasWhite = false
+  if ((pushArgCount) > 2) {
+    hasWhite = optionalHasWhite
+  }
+  if (or (_np_pixels == 0) (number != (size _np_pixels))) {
+    _np_pixels = (newList number)
+  }
+  fillList _np_pixels 0
+  '[display:neoPixelSetPin]' pinNumber hasWhite
+}
+
+to neoPixelSetAllToColor color {
+  '_NeoPixel_ensureInitialized'
+  fillList _np_pixels color
+  '_NeoPixel_update'
+}
+
+to randomColor {
+  local 'n1' (random 100 200)
+  local 'n2' (random 0 100)
+  if (1 == (random 1 3)) {
+    return ((n1 << 16) | (n2 << 8))
+  } (1 == (random 1 2)) {
+    return ((n2 << 16) | n1)
+  } else {
+    return ((n1 << 8) | n2)
+  }
+}
+
+to rotateNeoPixelsBy n {
+  '_NeoPixel_ensureInitialized'
+  repeat (absoluteValue n) {
+    '_NeoPixel_rotate' (n > 0)
+  }
+  '_NeoPixel_update'
+}
+
+to setNeoPixelColor i color {
+  '_NeoPixel_ensureInitialized'
+  if (and (1 <= i) (i <= (size _np_pixels))) {
+    atPut i _np_pixels color
+    '_NeoPixel_update'
+  }
+}
+
+to setNeoPixelColors10 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 {
+  '_NeoPixel_ensureInitialized'
+  if ((size _np_pixels) >= 1) {
+    atPut 1 _np_pixels c1
+  }
+  if ((size _np_pixels) >= 2) {
+    atPut 2 _np_pixels c2
+  }
+  if ((size _np_pixels) >= 3) {
+    atPut 3 _np_pixels c3
+  }
+  if ((size _np_pixels) >= 4) {
+    atPut 4 _np_pixels c4
+  }
+  if ((size _np_pixels) >= 5) {
+    atPut 5 _np_pixels c5
+  }
+  if ((size _np_pixels) >= 6) {
+    atPut 6 _np_pixels c6
+  }
+  if ((size _np_pixels) >= 7) {
+    atPut 7 _np_pixels c7
+  }
+  if ((size _np_pixels) >= 8) {
+    atPut 8 _np_pixels c8
+  }
+  if ((size _np_pixels) >= 9) {
+    atPut 9 _np_pixels c9
+  }
+  if ((size _np_pixels) >= 10) {
+    atPut 10 _np_pixels c10
+  }
+  '_NeoPixel_update'
+}
+

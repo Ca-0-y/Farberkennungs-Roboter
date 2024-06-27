@@ -1,0 +1,18 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables button 
+
+script 276 139 {
+whenStarted
+forever {
+  button = (digitalReadOp 13)
+  if (button == (booleanConstant true)) {
+    digitalWriteOp 0 true
+  } else {
+    digitalWriteOp 0 false
+  }
+}
+}
+

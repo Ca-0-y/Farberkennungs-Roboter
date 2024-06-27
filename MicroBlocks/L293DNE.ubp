@@ -1,0 +1,32 @@
+module main
+author unknown
+version 1 0 
+description ''
+
+script 145 90 {
+whenStarted
+comment 'MotorA_forward'
+digitalWriteOp 26 true
+analogWriteOp 14 160
+comment 'MotorB_forward'
+digitalWriteOp 25 true
+analogWriteOp 32 160
+waitMillis 500
+comment 'MotorA_stop'
+analogWriteOp 14 0
+comment 'MotorB_stop'
+analogWriteOp 32 0
+waitMillis 500
+comment 'MotorA_reverse'
+digitalWriteOp 27 true
+analogWriteOp 14 160
+comment 'MotorB_reverse'
+digitalWriteOp 33 true
+analogWriteOp 32 160
+waitMillis 500
+comment 'MotorA_stop'
+analogWriteOp 14 0
+comment 'MotorB_stop'
+analogWriteOp 32 0
+}
+

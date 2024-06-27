@@ -1,0 +1,26 @@
+module main
+author unknown
+version 1 0 
+description ''
+
+script 253 70 {
+whenStarted
+comment 'Rote LED an'
+digitalWriteOp 0 true
+waitMillis 500
+comment 'Rote LED aus und Gelbe LED an'
+digitalWriteOp 0 false
+digitalWriteOp 2 true
+waitMillis 200
+comment 'Gelbe LED aus und Grüne LED an'
+digitalWriteOp 2 false
+digitalWriteOp 15 true
+waitMillis 500
+comment 'Grüne LED aus und Gelbe LED an'
+digitalWriteOp 2 true
+digitalWriteOp 15 false
+waitMillis 300
+comment 'Gelbe LED aus'
+digitalWriteOp 2 false
+}
+

@@ -1,0 +1,83 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables Color r i2cData 
+
+script 649 50 {
+whenStarted
+i2cSet (hexToInt '10') (hexToInt '20') 0
+i2cSet (hexToInt '10') (hexToInt '08') 0
+i2cSet (hexToInt '10') (hexToInt '09') 0
+i2cSet (hexToInt '10') (hexToInt '0A') 0
+i2cSet (hexToInt '10') (hexToInt '0B') 0
+local 'crgb' (newList 28 0)
+'[sensors:i2cRead]' (hexToInt '10') crgb
+}
+
+script 63 233 {
+local 'r' (at 1 crgb)
+local 'g' (at 2 crgb)
+local 'b' (at 3 crgb)
+local 'min' (minimum r g b)
+local 'max' (maximum r g b)
+digitalWriteOp 23 false
+if (max < 50) {
+  return 'Black'
+}
+if (min > 185) {
+  return 'White'
+}
+if (max == r) {
+  local 'l' ((r * 2) / 3)
+  if (and (g < l) (b < l)) {
+    return 'Red'
+  }
+  if (g < l) {
+    return 'Magenta'
+  }
+  if (b < l) {
+    return 'Yellow'
+  }
+}
+if (max == g) {
+  local 'l' ((g * 2) / 3)
+  if (and (r < l) (b < l)) {
+    return 'Green'
+  }
+  if (r < l) {
+    return 'Cyan'
+  }
+  if (b < l) {
+    return 'Yellow'
+  }
+}
+if (max == b) {
+  local 'l' ((b * 2) / 3)
+  if (and (r < l) (g < l)) {
+    return 'Blue'
+  }
+  if (r < l) {
+    return 'Cyan'
+  }
+  if (g < l) {
+    return 'Magenta'
+  }
+}
+return ''
+}
+
+script 649 342 {
+local 'rgb' (newList 4)
+atPut 1 rgb (((at 2 crgb) << 8) | (at 1 crgb))
+atPut 2 rgb (((at 9 crgb) << 8) | (at 8 crgb))
+atPut 3 rgb (((at 16 crgb) << 8) | (at 15 crgb))
+atPut 4 rgb (((at 23 crgb) << 8) | (at 22 crgb))
+sayIt ('[data:joinStrings]' rgb ',')
+local 'color' (newList 3)
+for i 3 {
+  atPut i color (minimum ((at (i + 1) rgb) / 14) 255)
+}
+return ((((at 1 color) << 16) | ((at 2 color) << 8)) | (at 3 color))
+}
+

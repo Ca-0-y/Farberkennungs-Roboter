@@ -1,0 +1,346 @@
+module main
+author unknown
+version 1 0 
+description ''
+variables 'Button 1' 'Button 2' 'Button 4' 'Button 3' distancia Motorspeed stop beat Teil2 
+
+script 1179 51 {
+whenCondition (Motorspeed >= 0)
+if (and (Motorspeed == 1) (stop == 0)) {
+  digitalWriteOp 26 true
+  digitalWriteOp 25 true
+  analogWriteOp 14 300
+  analogWriteOp 32 300
+} (and (Motorspeed == 2) (stop == 0)) {
+  digitalWriteOp 26 true
+  digitalWriteOp 25 true
+  analogWriteOp 14 600
+  analogWriteOp 32 600
+} else {
+  analogWriteOp 14 0
+  analogWriteOp 32 0
+}
+}
+
+script 436 56 {
+whenBroadcastReceived 'go!'
+if ((v 'Button 4') == (booleanConstant true)) {
+  'attach buzzer to pin' 17
+  'play tone' 'e' 2 135
+  waitMillis 45
+  'play tone' 'e' 2 135
+  waitMillis 135
+  'play tone' 'e' 2 135
+  waitMillis 135
+  'play tone' 'c' 2 135
+  waitMillis 45
+  'play tone' 'e' 2 225
+  waitMillis 45
+  'play tone' 'g' 2 225
+  waitMillis 225
+  'play tone' 'g' 1 225
+  waitMillis 225
+  repeat 2 {
+    'play tone' 'c' 2 225
+    waitMillis 135
+    'play tone' 'g' 1 225
+    waitMillis 135
+    'play tone' 'e' 1 225
+    waitMillis 135
+    'play tone' 'a' 1 225
+    waitMillis 45
+    'play tone' 'h' 2 225
+    waitMillis 45
+    'play tone' 'b' 1 135
+    waitMillis 45
+    'play tone' 'a' 1 225
+    waitMillis 45
+    'play tone' 'g' 1 225
+    waitMillis 45
+    'play tone' 'e' 2 225
+    waitMillis 45
+    'play tone' 'g' 2 225
+    waitMillis 45
+    'play tone' 'a' 2 225
+    waitMillis 45
+    'play tone' 'f' 2 135
+    waitMillis 45
+    'play tone' 'g' 2 135
+    waitMillis 135
+    'play tone' 'e' 2 225
+    waitMillis 45
+    'play tone' 'c' 2 135
+    waitMillis 45
+    'play tone' 'd' 2 135
+    waitMillis 45
+    'play tone' 'h' 2 225
+    waitMillis 135
+  }
+}
+}
+
+script 771 60 {
+whenBroadcastReceived 'go!'
+if (distancia < 10) {
+  digitalWriteOp 0 true
+  digitalWriteOp 2 false
+  digitalWriteOp 15 false
+  Motorspeed = 0
+} (and (distancia >= 10) (distancia < 45)) {
+  digitalWriteOp 0 false
+  digitalWriteOp 2 true
+  digitalWriteOp 15 false
+  Motorspeed = 1
+} else {
+  digitalWriteOp 0 false
+  digitalWriteOp 2 false
+  digitalWriteOp 15 true
+  Motorspeed = 2
+}
+}
+
+script 54 70 {
+whenStarted
+repeatUntil ((v 'Button 1') == (booleanConstant true)) {
+  'Button 1' = (digitalReadOp 13)
+  stop = 0
+}
+forever {
+  'Button 2' = (digitalReadOp 5)
+  'Button 3' = (digitalReadOp 18)
+  'Button 4' = (digitalReadOp 19)
+  distancia = ('distance (cm)' 4 35)
+  if ((v 'Button 2') == (booleanConstant true)) {
+    stop = 1
+    digitalWriteOp 0 true
+    digitalWriteOp 2 true
+    digitalWriteOp 15 true
+    repeatUntil ((v 'Button 3') == (booleanConstant true)) {
+      'Button 3' = (digitalReadOp 18)
+    }
+    stop = 0
+  }
+  sendBroadcast 'go!'
+}
+}
+
+script 50 2416 {
+to 'play tone' {}
+}
+
+script 50 2845 {
+to '_baseFreqForNote' {}
+}
+
+script 50 3449 {
+to '_baseFreqForSemitone' {}
+}
+
+
+module 'Distance (HC-SR04)' Input
+author 'Joan Guillén & Josep Ferràndiz'
+version 1 2 
+tags sensor 'hc-sr04' distance ultrasound 
+description 'Support for the HC-SR04 ultrasound distance sensor.'
+variables _sr04_last 
+
+  spec 'r' 'distance (cm)' 'distance (cm) trigger _ echo _' 'num num' 2 4
+  spec 'r' 'sr04_distanceOnePin' 'distance (cm) pin _' 'num' 0
+
+to 'distance (cm)' trig ech {
+  comment 'Contributed by Joan Guillén and Josep Ferràndiz'
+  digitalWriteOp trig false
+  waitMicros 2
+  digitalWriteOp trig true
+  waitMicros 50
+  digitalWriteOp trig false
+  local 'start' (microsOp)
+  waitUntil (or (not (digitalReadOp ech)) (((microsOp) - start) > 23320))
+  waitUntil (or (digitalReadOp ech) (((microsOp) - start) > 23320))
+  if (((microsOp) - start) > 23320) {
+    comment 'Distance sensor not ready; return the last distance reading'
+    return _sr04_last
+  }
+  comment 'Pulse sent. Measure time until echo is detected.'
+  start = (microsOp)
+  waitUntil (or (not (digitalReadOp ech)) (((microsOp) - start) > 23320))
+  _sr04_last = ((10 * ((microsOp) - start)) / 583)
+  comment 'Leave some time for reverberations to die away.'
+  waitMillis 10
+  if (_sr04_last == 0) {
+    zeroCount += 1
+  }
+  return _sr04_last
+}
+
+to sr04_distanceOnePin pin {
+  return ('distance (cm)' pin pin)
+}
+
+
+module Tone Output
+author MicroBlocks
+version 1 8 
+tags tone sound music audio note speaker 
+choices tone_NoteName c 'c#' d 'd#' e f 'f#' g 'g#' a 'a#' b 
+description 'Audio tone generation. Make music with MicroBlocks!'
+variables _tonePin _toneInitalized _toneLoopOverhead _toneNoteNames _toneArezzoNotes _toneFrequencies 
+
+  spec ' ' 'play tone' 'play note _ octave _ for _ ms' 'str.tone_NoteName num num' 'c' 0 500
+  spec ' ' 'playMIDIKey' 'play midi key _ for _ ms' 'num num' 60 500
+  spec ' ' 'play frequency' 'play frequency _ for _ ms' 'num num' 261 500
+  space
+  spec ' ' 'startTone' 'start tone _ Hz' 'num' 440
+  spec ' ' 'stopTone' 'stop tone'
+  space
+  spec ' ' 'attach buzzer to pin' 'attach buzzer to pin _' 'auto' ''
+  space
+  spec 'r' '_measureLoopOverhead' '_measureLoopOverhead'
+  spec 'r' '_baseFreqForNote' '_baseFreqForNote _' 'auto' 'c'
+  spec 'r' '_baseFreqForSemitone' '_baseFreqForSemitone _' 'num' 0
+  spec ' ' '_toneLoop' '_toneLoop _ for _ ms' 'num num' 440000 100
+  spec 'r' '_trimmedLowercase' '_trimmedLowercase _' 'str' 'A. b C...'
+
+to '_baseFreqForNote' note {
+  comment 'Return the frequency for the given note in the middle-C octave
+scaled by 1000. For example, return 440000 (440Hz) for A.
+Note names may be upper or lower case. Note names
+may be followed by # for a sharp or b for a flat.'
+  local 'normalized note' ('_trimmedLowercase' note)
+  if (_toneNoteNames == 0) {
+    _toneNoteNames = ('[data:makeList]' 'c' 'c#' 'd' 'd#' 'e' 'f' 'f#' 'g' 'g#' 'a' 'a#' 'b' 'c_' 'db' 'd_' 'eb' 'e_' 'e#' 'f_' 'gb' 'g_' 'ab' 'a_' 'bb' 'b_' 'b#' 'h')
+    _toneArezzoNotes = ('[data:makeList]' 'do' 'do#' 're' 're#' 'mi' 'fa' 'fa#' 'sol' 'sol#' 'la' 'la#' 'si' 'do_' 'dob' 're_' 'reb' 'mi_' 'mi#' 'fa_' 'solb' 'sol_' 'lab' 'la_' 'sib' 'si_' 'si#' 'si_')
+  }
+  if (('[data:find]' (v 'normalized note') _toneArezzoNotes) > 0) {
+    return ('_baseFreqForSemitone' ('[data:find]' (v 'normalized note') _toneArezzoNotes))
+  } else {
+    return ('_baseFreqForSemitone' ('[data:find]' (v 'normalized note') _toneNoteNames))
+  }
+}
+
+to '_baseFreqForSemitone' semitone {
+  if (_toneFrequencies == 0) {_toneFrequencies = ('[data:makeList]' 261626 277183 293665 311127 329628 349228 369994 391995 415305 440000 466164 493883 246942 277183 277183 311127 311127 349228 329628 369994 369994 415305 415305 466164 466164 523252 246942)}
+  if (and (1 <= semitone) (semitone <= (size _toneFrequencies))) {
+    return (at semitone _toneFrequencies)
+  } else {
+    comment 'Bad note name; return 10 Hz'
+    return 10000
+  }
+}
+
+to '_measureLoopOverhead' {
+  comment 'Measure the loop overhead on this device'
+  local 'halfCycle' 100
+  local 'startT' (microsOp)
+  repeat 100 {
+    digitalWriteOp _tonePin false
+    waitMicros halfCycle
+    digitalWriteOp _tonePin false
+    waitMicros halfCycle
+  }
+  local 'usecs' ((microsOp) - startT)
+  return ((usecs - 20000) / 200)
+}
+
+to '_toneLoop' scaledFreq ms {
+  if (_toneInitalized == 0) {'attach buzzer to pin' ''}
+  if ('[io:hasTone]') {
+    '[io:playTone]' _tonePin (scaledFreq / 1000)
+    waitMillis ms
+    '[io:playTone]' _tonePin 0
+  } else {
+    local 'halfCycle' ((500000000 / scaledFreq) - _toneLoopOverhead)
+    local 'cycles' ((ms * 500) / halfCycle)
+    repeat cycles {
+      digitalWriteOp _tonePin true
+      waitMicros halfCycle
+      digitalWriteOp _tonePin false
+      waitMicros halfCycle
+    }
+  }
+}
+
+to '_trimmedLowercase' s {
+  comment 'Return a copy of the given string without whitespace
+or periods and all lowercase.'
+  local 'result' (newList (size s))
+  '[data:delete]' 'all' result
+  for i (size s) {
+    local 'ch' ('[data:unicodeAt]' i s)
+    if (and (ch > 32) (ch != 46)) {
+      if (and (65 <= ch) (ch <= 90)) {ch = (ch + 32)}
+      '[data:addLast]' ch result
+    }
+  }
+  return ('[data:unicodeString]' result)
+}
+
+to 'attach buzzer to pin' pinNumber {
+  if (pinNumber == '') {
+    comment 'Pin number not specified; use default pin for this device'
+    if ((boardType) == 'Citilab ED1') {
+      _tonePin = 26
+    } ((boardType) == 'M5Stack-Core') {
+      _tonePin = 25
+    } ((boardType) == 'M5StickC') {
+      _tonePin = 26
+    } ((boardType) == 'Calliope') {
+      digitalWriteOp 23 true
+      digitalWriteOp 24 true
+      _tonePin = 25
+    } ((boardType) == 'D1-Mini') {
+      _tonePin = 12
+    } else {
+      _tonePin = -1
+    }
+  } else {
+    _tonePin = pinNumber
+  }
+  _toneLoopOverhead = ('_measureLoopOverhead')
+  _toneInitalized = (booleanConstant true)
+}
+
+to 'play frequency' freq ms {
+  '_toneLoop' (freq * 1000) ms
+}
+
+to 'play tone' note octave ms {
+  local 'freq' ('_baseFreqForNote' note)
+  if (freq <= 10000) {
+    waitMillis ms
+    return 0
+  }
+  if (octave < 0) {
+    repeat (absoluteValue octave) {
+      freq = (freq / 2)
+    }
+  }
+  repeat octave {
+    freq = (freq * 2)
+  }
+  '_toneLoop' freq ms
+}
+
+to playMIDIKey key ms {
+  local 'freq' ('_baseFreqForSemitone' ((key % 12) + 1))
+  local 'octave' ((key / 12) - 5)
+  if (octave < 0) {
+    repeat (absoluteValue octave) {
+      freq = (freq / 2)
+    }
+  }
+  repeat octave {
+    freq = (freq * 2)
+  }
+  '_toneLoop' freq ms
+}
+
+to startTone freq {
+  if (_toneInitalized == 0) {'attach buzzer to pin' ''}
+  if ('[io:hasTone]') {'[io:playTone]' _tonePin freq}
+}
+
+to stopTone {
+  startTone 0
+}
+
